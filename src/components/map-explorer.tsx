@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Button, Card, Flex, Input, List, Segmented, Statistic, Tag } from "antd";
 import { MapView } from "@/components/map-view";
 import { categories, samplePlaces, type CategoryId } from "@/lib/places";
 
@@ -21,22 +22,26 @@ const panelStyle = {
   background: "var(--surface)",
   border: "1px solid var(--line)",
   borderRadius: "24px",
-  padding: "24px",
   backdropFilter: "blur(10px)",
 };
 
-const cardStyle = {
-  border: "1px solid var(--line)",
-  borderRadius: "18px",
-  padding: "16px",
-  background: "rgba(255,255,255,0.66)",
+const placeCardStyle = {
   cursor: "pointer",
 };
 
 export function MapExplorer() {
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<"all" | CategoryId>("all");
   const [search, setSearch] = useState("");
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(samplePlaces[0]?.id ?? null);
+
+  const categoryOptions = useMemo(
+    () => [
+      { label: "전체", value: "all" },
+      ...Object.entries(categories).map(([id, label]) => ({ label, value: id })),
+    ],
+    [],
+  );
 
   const filteredPlaces = useMemo(() => {
     const normalized = search.trim().toLowerCase();
@@ -64,151 +69,108 @@ export function MapExplorer() {
   return (
     <main style={pageStyle}>
       <div className="app-shell" style={shellStyle}>
-        <section style={panelStyle}>
-          <div style={{ display: "grid", gap: "12px" }}>
+        <Card style={panelStyle} styles={{ body: { padding: 24 } }} variant="borderless">
+          <Flex vertical gap={12}>
             <span style={{ color: "var(--accent)", fontWeight: 700 }}>Korea Map MVP</span>
             <h1 style={{ margin: 0, fontSize: "2.2rem", lineHeight: 1.1 }}>
-              지도 기반 제보/장소 관리 CMS
+              지역 기반 제보/장소 관리 CMS
             </h1>
             <p style={{ margin: 0, color: "var(--muted)", lineHeight: 1.6 }}>
-              한국 중심 지도 기본값과 검색, 카테고리 필터, 리스트-지도 연동을 우선 반영했습니다.
+              서울 중심 기본값과 검색, 카테고리 필터, 리스트와 지도 연동을 우선 반영했습니다.
             </p>
-          </div>
+          </Flex>
 
-          <div style={{ display: "grid", gap: "10px", marginTop: "20px" }}>
+          <Flex vertical gap={10} style={{ marginTop: "20px" }}>
             <label htmlFor="place-search" style={{ fontWeight: 700 }}>
               검색
             </label>
-            <input
+            <Input
               id="place-search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
+              allowClear
+              size="large"
               placeholder="장소명, 설명, 주소, 도시 검색"
-              style={{
-                width: "100%",
-                borderRadius: "14px",
-                border: "1px solid var(--line)",
-                padding: "12px 14px",
-                background: "#fff",
-              }}
+            />
+          </Flex>
+
+          <div style={{ marginTop: "16px" }}>
+            <Segmented
+              block
+              options={categoryOptions}
+              value={selectedCategory}
+              onChange={(value) => setSelectedCategory(value as "all" | CategoryId)}
             />
           </div>
 
-          <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginTop: "16px" }}>
-            <button
-              type="button"
-              onClick={() => setSelectedCategory("all")}
-              className={selectedCategory === "all" ? "chip-button is-active" : "chip-button"}
-            >
-              전체
-            </button>
-            {Object.entries(categories).map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setSelectedCategory(id as CategoryId)}
-                className={selectedCategory === id ? "chip-button is-active" : "chip-button"}
+          <div className="summary-grid" style={{ marginTop: "20px" }}>
+            <Card size="small">
+              <Statistic title="전체" value={samplePlaces.length} />
+            </Card>
+            <Card size="small">
+              <Statistic title="현재 결과" value={filteredPlaces.length} />
+            </Card>
+            <Card size="small">
+              <Statistic
+                title="확인 대기"
+                value={samplePlaces.filter((place) => place.status === "pending").length}
+              />
+            </Card>
+          </div>
+
+          <List
+            className="places-list"
+            dataSource={filteredPlaces}
+            locale={{ emptyText: "검색어를 줄이거나 카테고리를 전체로 바꿔보세요." }}
+            renderItem={(place) => (
+              <Card
+                key={place.id}
+                className={effectiveSelectedPlaceId === place.id ? "place-card is-selected" : "place-card"}
+                hoverable
+                size="small"
+                style={placeCardStyle}
+                onClick={() => setSelectedPlaceId(place.id)}
               >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-              gap: "10px",
-              marginTop: "20px",
-            }}
-          >
-            <article className="summary-card">
-              <strong>전체</strong>
-              <span>{samplePlaces.length}</span>
-            </article>
-            <article className="summary-card">
-              <strong>현재 결과</strong>
-              <span>{filteredPlaces.length}</span>
-            </article>
-            <article className="summary-card">
-              <strong>승인 대기</strong>
-              <span>{samplePlaces.filter((place) => place.status === "pending").length}</span>
-            </article>
-          </div>
-
-          <div style={{ display: "grid", gap: "12px", marginTop: "20px" }}>
-            {filteredPlaces.length === 0 ? (
-              <article style={cardStyle}>
-                <strong>검색 결과가 없습니다.</strong>
+                <Flex justify="space-between" align="center" gap={12}>
+                  <strong>{place.name}</strong>
+                  <Tag color={place.status === "published" ? "green" : "gold"}>
+                    {place.status === "published" ? "공개" : "확인 대기"}
+                  </Tag>
+                </Flex>
                 <p style={{ margin: "8px 0 0", color: "var(--muted)", lineHeight: 1.5 }}>
-                  검색어를 줄이거나 카테고리를 전체로 바꿔보세요.
+                  {place.description}
                 </p>
-              </article>
-            ) : (
-              filteredPlaces.map((place) => (
-                <article
-                  key={place.id}
-                  style={cardStyle}
-                  className={effectiveSelectedPlaceId === place.id ? "place-card is-selected" : "place-card"}
-                  onClick={() => setSelectedPlaceId(place.id)}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      gap: "12px",
-                    }}
-                  >
-                    <strong>{place.name}</strong>
-                    <span style={{ color: "var(--muted)", fontSize: "0.9rem" }}>
-                      {place.status === "published" ? "공개" : "승인 대기"}
-                    </span>
-                  </div>
-                  <p style={{ margin: "8px 0 0", color: "var(--muted)", lineHeight: 1.5 }}>
-                    {place.description}
-                  </p>
-                  <p style={{ margin: "12px 0 0", fontSize: "0.92rem" }}>
-                    {categories[place.category]} · {place.city} · {place.address}
-                  </p>
-                </article>
-              ))
+                <p style={{ margin: "12px 0 0", fontSize: "0.92rem" }}>
+                  {categories[place.category]} · {place.city} · {place.address}
+                </p>
+              </Card>
             )}
-          </div>
+            split={false}
+            style={{ marginTop: "20px" }}
+          />
 
           <div style={{ marginTop: "20px" }}>
-            <Link
-              href="/admin"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "12px 16px",
-                borderRadius: "14px",
-                background: "var(--accent)",
-                color: "#fff",
-                fontWeight: 700,
-              }}
-            >
+            <Button block type="primary" size="large" onClick={() => router.push("/admin")}>
               관리자 화면 보기
-            </Link>
+            </Button>
           </div>
-        </section>
+        </Card>
 
-        <section
+        <Card
           style={{
             ...panelStyle,
-            padding: "0",
             overflow: "hidden",
             minHeight: "70vh",
           }}
+          styles={{ body: { padding: 0, height: "100%" } }}
+          variant="borderless"
         >
           <MapView
             places={filteredPlaces}
             selectedPlaceId={effectiveSelectedPlaceId}
             onSelectPlace={setSelectedPlaceId}
           />
-        </section>
+        </Card>
       </div>
     </main>
   );

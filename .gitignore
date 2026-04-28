@@ -2,5 +2,9 @@
 node_modules
 out
 coverage
+.yarn/install-state.gz
+.yarn/unplugged
+.pnp.cjs
+.pnp.loader.mjs
 *.log
 *.tsbuildinfo

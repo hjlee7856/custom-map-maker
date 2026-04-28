@@ -96,9 +96,19 @@ export function MapView({ places, selectedPlaceId, onSelectPlace }: MapViewProps
       element.setAttribute("aria-label", place.name);
       element.addEventListener("click", () => onSelectPlace(place.id));
 
-      const popup = new maplibregl.Popup({ offset: 24 }).setHTML(
-        `<strong>${place.name}</strong><br />${categories[place.category]} · ${place.city}<br />${place.address}`,
-      );
+      const popup = new maplibregl.Popup({
+        offset: 24,
+        className: "map-popup",
+      }).setHTML(`
+        <div class="map-popup-card">
+          <div class="map-popup-header">
+            <strong class="map-popup-title">${place.name}</strong>
+            <span class="map-popup-tag">${categories[place.category]}</span>
+          </div>
+          <p class="map-popup-city">${place.city}</p>
+          <p class="map-popup-address">${place.address}</p>
+        </div>
+      `);
 
       const marker = new maplibregl.Marker({ element })
         .setLngLat(place.coordinates)

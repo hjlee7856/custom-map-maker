@@ -35,8 +35,8 @@
 ## 로컬 실행
 
 ```bash
-pnpm install
-pnpm dev
+yarn install
+yarn dev
 ```
 
 - 공개 화면: `http://localhost:3000`
