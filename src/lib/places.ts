@@ -1,20 +1,37 @@
-export type CategoryId = "food" | "report" | "parking";
+export type PlaceStatus = "published" | "pending" | "rejected";
+
+export type Category = {
+  id: string;
+  label: string;
+};
 
 export type Place = {
   id: string;
   name: string;
-  category: CategoryId;
+  category: string;
   description: string;
   address: string;
   city: string;
-  status: "published" | "pending";
+  status: PlaceStatus;
   coordinates: [number, number];
 };
 
-export const categories: Record<CategoryId, string> = {
-  food: "맛집",
-  report: "제보",
-  parking: "주차",
+export const sampleCategories: Category[] = [
+  { id: "food", label: "맛집" },
+  { id: "report", label: "제보" },
+  { id: "parking", label: "주차" },
+];
+
+export const placeStatusLabels: Record<PlaceStatus, string> = {
+  published: "공개",
+  pending: "확인 대기",
+  rejected: "반려",
+};
+
+export const placeStatusColors: Record<PlaceStatus, string> = {
+  published: "green",
+  pending: "gold",
+  rejected: "red",
 };
 
 export const samplePlaces: Place[] = [
@@ -59,3 +76,23 @@ export const samplePlaces: Place[] = [
     coordinates: [126.3111, 33.4621],
   },
 ];
+
+export function getCategoryLabel(categories: Category[], categoryId: string) {
+  return categories.find((category) => category.id === categoryId)?.label ?? categoryId;
+}
+
+export function createCategoryMap(categories: Category[]) {
+  return Object.fromEntries(categories.map((category) => [category.id, category.label]));
+}
+
+const markerPalette = ["#dc2626", "#d97706", "#0f766e", "#2563eb", "#7c3aed", "#be123c"] as const;
+
+export function getCategoryColor(categoryId: string) {
+  let hash = 0;
+
+  for (const character of categoryId) {
+    hash = (hash * 31 + character.charCodeAt(0)) >>> 0;
+  }
+
+  return markerPalette[hash % markerPalette.length];
+}

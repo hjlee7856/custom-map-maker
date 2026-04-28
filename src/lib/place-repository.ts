@@ -1,4 +1,4 @@
-import { samplePlaces, type CategoryId, type Place } from "@/lib/places";
+import { sampleCategories, samplePlaces, type Category, type Place, type PlaceStatus } from "@/lib/places";
 import { createClient } from "@/lib/supabase/server";
 
 type PlaceRow = {
@@ -13,27 +13,30 @@ type PlaceRow = {
   longitude: number;
 };
 
+type CategoryRow = {
+  id: string;
+  label: string;
+};
+
 export type PlaceMutationInput = {
   name: string;
-  category: CategoryId;
+  category: string;
   description: string;
   address: string;
   city: string;
-  status: Place["status"];
+  status: PlaceStatus;
   latitude: number;
   longitude: number;
 };
 
-function isCategory(value: string): value is CategoryId {
-  return value === "food" || value === "report" || value === "parking";
-}
+export type ReportMutationInput = Omit<PlaceMutationInput, "status">;
 
-function isStatus(value: string): value is Place["status"] {
-  return value === "published" || value === "pending";
+function isStatus(value: string): value is PlaceStatus {
+  return value === "published" || value === "pending" || value === "rejected";
 }
 
 function mapPlaceRow(row: PlaceRow): Place | null {
-  if (!isCategory(row.category) || !isStatus(row.status)) {
+  if (!isStatus(row.status) || !row.category.trim()) {
     return null;
   }
 
@@ -46,6 +49,13 @@ function mapPlaceRow(row: PlaceRow): Place | null {
     city: row.city,
     status: row.status,
     coordinates: [row.longitude, row.latitude],
+  };
+}
+
+function mapCategoryRow(row: CategoryRow): Category {
+  return {
+    id: row.id,
+    label: row.label,
   };
 }
 
@@ -69,12 +79,21 @@ function validateCoordinates(latitude: number, longitude: number) {
   }
 }
 
+function toCategoryId(label: string) {
+  const normalized = normalizeString(label, "카테고리명")
+    .toLowerCase()
+    .replace(/[^a-z0-9가-힣]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return normalized || `category-${crypto.randomUUID().slice(0, 8)}`;
+}
+
 function toPlaceRowInput(input: PlaceMutationInput) {
   validateCoordinates(input.latitude, input.longitude);
 
   return {
     name: normalizeString(input.name, "장소명"),
-    category: input.category,
+    category: normalizeString(input.category, "카테고리"),
     description: normalizeString(input.description, "설명"),
     address: normalizeString(input.address, "주소"),
     city: normalizeString(input.city, "도시"),
@@ -84,26 +103,79 @@ function toPlaceRowInput(input: PlaceMutationInput) {
   };
 }
 
-export async function getPlaces(): Promise<Place[]> {
+async function fetchPlaces(status?: PlaceStatus): Promise<Place[]> {
   const supabase = await createClient();
 
   if (!supabase) {
-    return samplePlaces;
+    const fallback = status ? samplePlaces.filter((place) => place.status === status) : samplePlaces;
+    return fallback;
   }
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("places")
-    .select("id, name, category, description, address, city, status, latitude, longitude")
-    .order("name", { ascending: true });
+    .select("id, name, category, description, address, city, status, latitude, longitude");
+
+  if (status) {
+    query = query.eq("status", status);
+  }
+
+  const { data, error } = await query.order("name", { ascending: true });
 
   if (error) {
     console.error("Failed to fetch places from Supabase:", error.message);
-    return samplePlaces;
+    return status ? samplePlaces.filter((place) => place.status === status) : samplePlaces;
   }
 
-  const places = (data as PlaceRow[]).map(mapPlaceRow).filter((place): place is Place => place !== null);
+  return (data as PlaceRow[]).map(mapPlaceRow).filter((place): place is Place => place !== null);
+}
 
-  return places;
+export async function getCategories(): Promise<Category[]> {
+  const supabase = await createClient();
+
+  if (!supabase) {
+    return sampleCategories;
+  }
+
+  const { data, error } = await supabase.from("place_categories").select("id, label").order("label");
+
+  if (error) {
+    console.error("Failed to fetch categories from Supabase:", error.message);
+    return sampleCategories;
+  }
+
+  return (data as CategoryRow[]).map(mapCategoryRow);
+}
+
+export async function getPublicPlaces() {
+  return fetchPlaces("published");
+}
+
+export async function getAdminPlaces() {
+  return fetchPlaces();
+}
+
+export async function getPlaces() {
+  return getPublicPlaces();
+}
+
+export async function createCategory(label: string) {
+  const supabase = await createClient();
+
+  if (!supabase) {
+    throw new Error("Supabase 설정이 없습니다.");
+  }
+
+  const normalizedLabel = normalizeString(label, "카테고리명");
+  const payload = {
+    id: toCategoryId(normalizedLabel),
+    label: normalizedLabel,
+  };
+
+  const { error } = await supabase.from("place_categories").insert(payload);
+
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 export async function createPlace(input: PlaceMutationInput) {
@@ -125,6 +197,13 @@ export async function createPlace(input: PlaceMutationInput) {
   }
 }
 
+export async function createReport(input: ReportMutationInput) {
+  await createPlace({
+    ...input,
+    status: "pending",
+  });
+}
+
 export async function updatePlace(id: string, input: PlaceMutationInput) {
   const supabase = await createClient();
 
@@ -133,6 +212,20 @@ export async function updatePlace(id: string, input: PlaceMutationInput) {
   }
 
   const { error } = await supabase.from("places").update(toPlaceRowInput(input)).eq("id", id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+export async function updatePlaceStatus(id: string, status: PlaceStatus) {
+  const supabase = await createClient();
+
+  if (!supabase) {
+    throw new Error("Supabase 설정이 없습니다.");
+  }
+
+  const { error } = await supabase.from("places").update({ status }).eq("id", id);
 
   if (error) {
     throw new Error(error.message);

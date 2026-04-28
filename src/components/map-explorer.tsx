@@ -2,9 +2,15 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, Flex, Input, List, Segmented, Statistic, Tag } from "antd";
+import { Button, Card, Flex, Input, Segmented, Statistic, Tag } from "antd";
 import { MapView } from "@/components/map-view";
-import { categories, type CategoryId, type Place } from "@/lib/places";
+import {
+  getCategoryLabel,
+  placeStatusColors,
+  placeStatusLabels,
+  type Category,
+  type Place,
+} from "@/lib/places";
 
 const pageStyle = {
   minHeight: "100vh",
@@ -30,21 +36,22 @@ const placeCardStyle = {
 };
 
 type MapExplorerProps = {
+  categories: Category[];
   places: Place[];
 };
 
-export function MapExplorer({ places }: MapExplorerProps) {
+export function MapExplorer({ categories, places }: MapExplorerProps) {
   const router = useRouter();
-  const [selectedCategory, setSelectedCategory] = useState<"all" | CategoryId>("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(places[0]?.id ?? null);
 
   const categoryOptions = useMemo(
     () => [
       { label: "전체", value: "all" },
-      ...Object.entries(categories).map(([id, label]) => ({ label, value: id })),
+      ...categories.map((category) => ({ label: category.label, value: category.id })),
     ],
-    [],
+    [categories],
   );
 
   const filteredPlaces = useMemo(() => {
@@ -103,7 +110,7 @@ export function MapExplorer({ places }: MapExplorerProps) {
               block
               options={categoryOptions}
               value={selectedCategory}
-              onChange={(value) => setSelectedCategory(value as "all" | CategoryId)}
+              onChange={(value) => setSelectedCategory(String(value))}
             />
           </div>
 
@@ -115,18 +122,15 @@ export function MapExplorer({ places }: MapExplorerProps) {
               <Statistic title="현재 결과" value={filteredPlaces.length} />
             </Card>
             <Card size="small">
-              <Statistic
-                title="확인 대기"
-                value={places.filter((place) => place.status === "pending").length}
-              />
+              <Statistic title="카테고리" value={new Set(filteredPlaces.map((place) => place.category)).size} />
             </Card>
           </div>
 
-          <List
-            className="places-list"
-            dataSource={filteredPlaces}
-            locale={{ emptyText: "검색어를 줄이거나 카테고리를 전체로 바꿔보세요." }}
-            renderItem={(place) => (
+          <div className="places-list" style={{ marginTop: "20px" }}>
+            {filteredPlaces.length === 0 ? (
+              <Card size="small">검색어를 줄이거나 카테고리를 전체로 바꿔보세요.</Card>
+            ) : null}
+            {filteredPlaces.map((place) => (
               <Card
                 key={place.id}
                 className={effectiveSelectedPlaceId === place.id ? "place-card is-selected" : "place-card"}
@@ -137,27 +141,26 @@ export function MapExplorer({ places }: MapExplorerProps) {
               >
                 <Flex justify="space-between" align="center" gap={12}>
                   <strong>{place.name}</strong>
-                  <Tag color={place.status === "published" ? "green" : "gold"}>
-                    {place.status === "published" ? "공개" : "확인 대기"}
-                  </Tag>
+                  <Tag color={placeStatusColors[place.status]}>{placeStatusLabels[place.status]}</Tag>
                 </Flex>
                 <p style={{ margin: "8px 0 0", color: "var(--muted)", lineHeight: 1.5 }}>
                   {place.description}
                 </p>
                 <p style={{ margin: "12px 0 0", fontSize: "0.92rem" }}>
-                  {categories[place.category]} · {place.city} · {place.address}
+                  {getCategoryLabel(categories, place.category)} · {place.city} · {place.address}
                 </p>
               </Card>
-            )}
-            split={false}
-            style={{ marginTop: "20px" }}
-          />
+            ))}
+          </div>
 
-          <div style={{ marginTop: "20px" }}>
-            <Button block type="primary" size="large" onClick={() => router.push("/admin")}>
+          <Flex gap={12} style={{ marginTop: "20px" }} vertical>
+            <Button block type="primary" size="large" onClick={() => router.push("/report")}>
+              제보하기
+            </Button>
+            <Button block size="large" onClick={() => router.push("/admin")}>
               관리자 화면 보기
             </Button>
-          </div>
+          </Flex>
         </Card>
 
         <Card
@@ -170,6 +173,7 @@ export function MapExplorer({ places }: MapExplorerProps) {
           variant="borderless"
         >
           <MapView
+            categories={categories}
             places={filteredPlaces}
             selectedPlaceId={effectiveSelectedPlaceId}
             onSelectPlace={setSelectedPlaceId}

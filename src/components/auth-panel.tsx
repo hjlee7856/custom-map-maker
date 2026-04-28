@@ -61,7 +61,13 @@ export function AuthPanel() {
       }}
     >
       <Card style={panelStyle} styles={{ body: { padding: 24 } }} variant="borderless">
-        <Flex vertical gap={16}>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submit();
+          }}
+        >
+          <Flex vertical gap={16}>
           <div>
             <p style={{ margin: 0, color: "var(--accent)", fontWeight: 700 }}>Supabase Auth</p>
             <h1 style={{ margin: "8px 0 0", fontSize: "2rem" }}>관리자 로그인</h1>
@@ -88,6 +94,7 @@ export function AuthPanel() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="admin@example.com"
+              autoComplete="email"
             />
           </label>
 
@@ -98,6 +105,7 @@ export function AuthPanel() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="비밀번호 입력"
+              autoComplete={mode === "login" ? "current-password" : "new-password"}
             />
           </label>
 
@@ -114,10 +122,11 @@ export function AuthPanel() {
             </div>
           ) : null}
 
-          <Button type="primary" size="large" loading={pending} onClick={submit}>
+          <Button type="primary" size="large" loading={pending} htmlType="submit">
             {mode === "login" ? "로그인" : "회원가입"}
           </Button>
-        </Flex>
+          </Flex>
+        </form>
       </Card>
     </main>
   );

@@ -7,13 +7,7 @@ import maplibregl, {
   Marker,
   StyleSpecification,
 } from "maplibre-gl";
-import { categories, type Place } from "@/lib/places";
-
-const markerColors = {
-  food: "#dc2626",
-  report: "#d97706",
-  parking: "#0f766e",
-} as const;
+import { getCategoryColor, getCategoryLabel, type Category, type Place } from "@/lib/places";
 
 const koreaBounds: LngLatBoundsLike = [
   [124.5, 33.0],
@@ -40,12 +34,13 @@ const baseStyle: StyleSpecification = {
 };
 
 type MapViewProps = {
+  categories: Category[];
   places: Place[];
   selectedPlaceId: string | null;
   onSelectPlace: (placeId: string) => void;
 };
 
-export function MapView({ places, selectedPlaceId, onSelectPlace }: MapViewProps) {
+export function MapView({ categories, places, selectedPlaceId, onSelectPlace }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const markersRef = useRef<Map<string, Marker>>(new Map());
@@ -92,7 +87,7 @@ export function MapView({ places, selectedPlaceId, onSelectPlace }: MapViewProps
       const element = document.createElement("button");
       element.type = "button";
       element.className = place.id === selectedPlaceId ? "map-marker is-selected" : "map-marker";
-      element.style.setProperty("--marker-color", markerColors[place.category]);
+      element.style.setProperty("--marker-color", getCategoryColor(place.category));
       element.setAttribute("aria-label", place.name);
       element.addEventListener("click", () => onSelectPlace(place.id));
 
@@ -103,7 +98,7 @@ export function MapView({ places, selectedPlaceId, onSelectPlace }: MapViewProps
         <div class="map-popup-card">
           <div class="map-popup-header">
             <strong class="map-popup-title">${place.name}</strong>
-            <span class="map-popup-tag">${categories[place.category]}</span>
+            <span class="map-popup-tag">${getCategoryLabel(categories, place.category)}</span>
           </div>
           <p class="map-popup-city">${place.city}</p>
           <p class="map-popup-address">${place.address}</p>
@@ -130,7 +125,7 @@ export function MapView({ places, selectedPlaceId, onSelectPlace }: MapViewProps
       maxZoom: 9.5,
       duration: 0,
     });
-  }, [places, selectedPlaceId, onSelectPlace]);
+  }, [categories, places, selectedPlaceId, onSelectPlace]);
 
   useEffect(() => {
     const map = mapRef.current;
