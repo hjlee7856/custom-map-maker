@@ -6,5 +6,8 @@ coverage
 .yarn/unplugged
 .pnp.cjs
 .pnp.loader.mjs
+.env
+.env.local
+.env*.local
 *.log
 *.tsbuildinfo

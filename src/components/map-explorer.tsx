@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Card, Flex, Input, List, Segmented, Statistic, Tag } from "antd";
 import { MapView } from "@/components/map-view";
-import { categories, samplePlaces, type CategoryId } from "@/lib/places";
+import { categories, type CategoryId, type Place } from "@/lib/places";
 
 const pageStyle = {
   minHeight: "100vh",
@@ -29,11 +29,15 @@ const placeCardStyle = {
   cursor: "pointer",
 };
 
-export function MapExplorer() {
+type MapExplorerProps = {
+  places: Place[];
+};
+
+export function MapExplorer({ places }: MapExplorerProps) {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<"all" | CategoryId>("all");
   const [search, setSearch] = useState("");
-  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(samplePlaces[0]?.id ?? null);
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(places[0]?.id ?? null);
 
   const categoryOptions = useMemo(
     () => [
@@ -46,7 +50,7 @@ export function MapExplorer() {
   const filteredPlaces = useMemo(() => {
     const normalized = search.trim().toLowerCase();
 
-    return samplePlaces.filter((place) => {
+    return places.filter((place) => {
       const matchesCategory = selectedCategory === "all" || place.category === selectedCategory;
       const matchesSearch =
         normalized.length === 0 ||
@@ -56,7 +60,7 @@ export function MapExplorer() {
 
       return matchesCategory && matchesSearch;
     });
-  }, [search, selectedCategory]);
+  }, [places, search, selectedCategory]);
 
   const effectiveSelectedPlaceId = useMemo(() => {
     if (filteredPlaces.some((place) => place.id === selectedPlaceId)) {
@@ -105,7 +109,7 @@ export function MapExplorer() {
 
           <div className="summary-grid" style={{ marginTop: "20px" }}>
             <Card size="small">
-              <Statistic title="전체" value={samplePlaces.length} />
+              <Statistic title="전체" value={places.length} />
             </Card>
             <Card size="small">
               <Statistic title="현재 결과" value={filteredPlaces.length} />
@@ -113,7 +117,7 @@ export function MapExplorer() {
             <Card size="small">
               <Statistic
                 title="확인 대기"
-                value={samplePlaces.filter((place) => place.status === "pending").length}
+                value={places.filter((place) => place.status === "pending").length}
               />
             </Card>
           </div>
