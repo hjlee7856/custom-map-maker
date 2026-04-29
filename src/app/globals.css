@@ -58,6 +58,7 @@ select {
 .places-list {
   display: grid;
   gap: 12px;
+  align-content: start;
 }
 
 .dashboard-list .ant-list-items {
@@ -229,18 +230,31 @@ select {
 }
 
 .map-marker {
-  width: 18px;
-  height: 18px;
-  border-radius: 999px;
-  border: 2px solid #fff;
-  background: var(--marker-color);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   cursor: pointer;
 }
 
-.map-marker.is-selected {
-  width: 24px;
-  height: 24px;
+.map-marker-dot {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: var(--marker-color);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+  transform-origin: center;
+  transition: transform 120ms ease, box-shadow 120ms ease;
+}
+
+.map-marker.is-selected .map-marker-dot {
+  transform: scale(1.33);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.26);
 }
 
 .maplibregl-ctrl-group {
@@ -272,6 +286,7 @@ select {
 @media (max-width: 960px) {
   .app-shell {
     grid-template-columns: 1fr !important;
+    grid-template-rows: minmax(0, 1fr) minmax(320px, 42vh);
   }
 
   .summary-grid {

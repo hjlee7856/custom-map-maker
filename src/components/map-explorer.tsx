@@ -13,15 +13,17 @@ import {
 } from "@/lib/places";
 
 const pageStyle = {
-  minHeight: "100vh",
+  height: "100vh",
   padding: "24px",
+  overflow: "hidden",
 };
 
 const shellStyle = {
   display: "grid",
   gridTemplateColumns: "360px 1fr",
   gap: "20px",
-  minHeight: "calc(100vh - 48px)",
+  height: "100%",
+  minHeight: 0,
 };
 
 const panelStyle = {
@@ -29,10 +31,27 @@ const panelStyle = {
   border: "1px solid var(--line)",
   borderRadius: "24px",
   backdropFilter: "blur(10px)",
+  minHeight: 0,
 };
 
 const placeCardStyle = {
   cursor: "pointer",
+};
+
+const sidebarBodyStyle = {
+  padding: 24,
+  height: "100%",
+  display: "flex",
+  flexDirection: "column" as const,
+  minHeight: 0,
+};
+
+const placesListStyle = {
+  marginTop: "20px",
+  flex: 1,
+  minHeight: 0,
+  overflowY: "auto" as const,
+  paddingRight: "4px",
 };
 
 type MapExplorerProps = {
@@ -80,7 +99,7 @@ export function MapExplorer({ categories, places }: MapExplorerProps) {
   return (
     <main style={pageStyle}>
       <div className="app-shell" style={shellStyle}>
-        <Card style={panelStyle} styles={{ body: { padding: 24 } }} variant="borderless">
+        <Card style={{ ...panelStyle, overflow: "hidden" }} styles={{ body: sidebarBodyStyle }} variant="borderless">
           <Flex vertical gap={12}>
             <span style={{ color: "var(--accent)", fontWeight: 700 }}>Korea Map MVP</span>
             <h1 style={{ margin: 0, fontSize: "2.2rem", lineHeight: 1.1 }}>
@@ -126,7 +145,7 @@ export function MapExplorer({ categories, places }: MapExplorerProps) {
             </Card>
           </div>
 
-          <div className="places-list" style={{ marginTop: "20px" }}>
+          <div className="places-list" style={placesListStyle}>
             {filteredPlaces.length === 0 ? (
               <Card size="small">검색어를 줄이거나 카테고리를 전체로 바꿔보세요.</Card>
             ) : null}
@@ -167,7 +186,7 @@ export function MapExplorer({ categories, places }: MapExplorerProps) {
           style={{
             ...panelStyle,
             overflow: "hidden",
-            minHeight: "70vh",
+            height: "100%",
           }}
           styles={{ body: { padding: 0, height: "100%" } }}
           variant="borderless"
