@@ -1,4 +1,10 @@
-import { sampleCategories, samplePlaces, type Category, type Place, type PlaceStatus } from "@/lib/places";
+import {
+  sampleCategories,
+  samplePlaces,
+  type Category,
+  type Place,
+  type PlaceStatus,
+} from "@/lib/places";
 import { createClient } from "@/lib/supabase/server";
 
 type PlaceRow = {
@@ -69,6 +75,21 @@ function normalizeString(value: string, fieldName: string) {
   return normalized;
 }
 
+function normalizeCategoryLookup(value: string) {
+  return value.trim().toLowerCase();
+}
+
+function findMatchingCategory(categories: Category[], value: string) {
+  const normalizedValue = normalizeString(value, "카테고리");
+  const normalizedLookup = normalizeCategoryLookup(normalizedValue);
+
+  return categories.find(
+    (category) =>
+      category.id === normalizedValue ||
+      normalizeCategoryLookup(category.label) === normalizedLookup,
+  );
+}
+
 function validateCoordinates(latitude: number, longitude: number) {
   if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90) {
     throw new Error("위도 값을 확인해주세요.");
@@ -107,7 +128,9 @@ async function fetchPlaces(status?: PlaceStatus): Promise<Place[]> {
   const supabase = await createClient();
 
   if (!supabase) {
-    const fallback = status ? samplePlaces.filter((place) => place.status === status) : samplePlaces;
+    const fallback = status
+      ? samplePlaces.filter((place) => place.status === status)
+      : samplePlaces;
     return fallback;
   }
 
@@ -123,7 +146,9 @@ async function fetchPlaces(status?: PlaceStatus): Promise<Place[]> {
 
   if (error) {
     console.error("Failed to fetch places from Supabase:", error.message);
-    return status ? samplePlaces.filter((place) => place.status === status) : samplePlaces;
+    return status
+      ? samplePlaces.filter((place) => place.status === status)
+      : samplePlaces;
   }
 
   return (data as PlaceRow[]).map(mapPlaceRow).filter((place): place is Place => place !== null);
@@ -136,7 +161,10 @@ export async function getCategories(): Promise<Category[]> {
     return sampleCategories;
   }
 
-  const { data, error } = await supabase.from("place_categories").select("id, label").order("label");
+  const { data, error } = await supabase
+    .from("place_categories")
+    .select("id, label")
+    .order("label");
 
   if (error) {
     console.error("Failed to fetch categories from Supabase:", error.message);
@@ -144,6 +172,18 @@ export async function getCategories(): Promise<Category[]> {
   }
 
   return (data as CategoryRow[]).map(mapCategoryRow);
+}
+
+async function resolveCategoryId(value: string) {
+  const categories = await getCategories();
+  const existingCategory = findMatchingCategory(categories, value);
+
+  if (existingCategory) {
+    return existingCategory.id;
+  }
+
+  const createdCategory = await createCategory(value);
+  return createdCategory.id;
 }
 
 export async function getPublicPlaces() {
@@ -158,7 +198,7 @@ export async function getPlaces() {
   return getPublicPlaces();
 }
 
-export async function createCategory(label: string) {
+export async function createCategory(label: string): Promise<Category> {
   const supabase = await createClient();
 
   if (!supabase) {
@@ -166,6 +206,12 @@ export async function createCategory(label: string) {
   }
 
   const normalizedLabel = normalizeString(label, "카테고리명");
+  const existingCategory = findMatchingCategory(await getCategories(), normalizedLabel);
+
+  if (existingCategory) {
+    return existingCategory;
+  }
+
   const payload = {
     id: toCategoryId(normalizedLabel),
     label: normalizedLabel,
@@ -174,8 +220,17 @@ export async function createCategory(label: string) {
   const { error } = await supabase.from("place_categories").insert(payload);
 
   if (error) {
+    const categories = await getCategories();
+    const matchedCategory = findMatchingCategory(categories, normalizedLabel);
+
+    if (matchedCategory) {
+      return matchedCategory;
+    }
+
     throw new Error(error.message);
   }
+
+  return payload;
 }
 
 export async function createPlace(input: PlaceMutationInput) {
@@ -198,8 +253,11 @@ export async function createPlace(input: PlaceMutationInput) {
 }
 
 export async function createReport(input: ReportMutationInput) {
+  const categoryId = await resolveCategoryId(input.category);
+
   await createPlace({
     ...input,
+    category: categoryId,
     status: "pending",
   });
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button, Card, Flex, Form, Input, InputNumber, Select } from "antd";
+import { AutoComplete, Button, Card, Flex, Form, Input, InputNumber } from "antd";
 import { createReportAction } from "@/app/report/actions";
 import { CoordinatePicker } from "@/components/coordinate-picker";
 import type { Category, Place } from "@/lib/places";
@@ -18,7 +18,7 @@ const panelStyle = {
 
 const defaultValues: ReportMutationInput = {
   name: "",
-  category: "report",
+  category: "",
   description: "",
   address: "",
   city: "",
@@ -32,11 +32,32 @@ type ReportFormProps = {
   userEmail?: string;
 };
 
+function getDefaultCategoryValue(categories: Category[]) {
+  return categories.find((category) => category.id === "report")?.label ?? categories[0]?.label ?? "제보";
+}
+
 export function ReportForm({ categories, previewPlaces, userEmail }: ReportFormProps) {
   const router = useRouter();
   const [form] = Form.useForm<ReportMutationInput>();
   const [feedback, setFeedback] = useState<{ type: "error" | "success"; text: string } | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  const defaultCategoryValue = useMemo(() => getDefaultCategoryValue(categories), [categories]);
+  const categoryOptions = useMemo(
+    () =>
+      categories.map((category) => ({
+        value: category.label,
+        label: category.label,
+      })),
+    [categories],
+  );
+
+  function resetForm() {
+    form.setFieldsValue({
+      ...defaultValues,
+      category: defaultCategoryValue,
+    });
+  }
 
   function submit(values: ReportMutationInput) {
     setFeedback(null);
@@ -51,12 +72,9 @@ export function ReportForm({ categories, previewPlaces, userEmail }: ReportFormP
 
       setFeedback({
         type: "success",
-        text: "제보를 등록했습니다. 관리자 승인 후 공개 지도에 반영됩니다.",
+        text: "제보를 등록했습니다. 관리자 확인 후 공개 지도에 반영됩니다.",
       });
-      form.setFieldsValue({
-        ...defaultValues,
-        category: categories.find((category) => category.id === "report")?.id ?? categories[0]?.id ?? "report",
-      });
+      resetForm();
       router.refresh();
     });
   }
@@ -67,9 +85,9 @@ export function ReportForm({ categories, previewPlaces, userEmail }: ReportFormP
         <Flex justify="space-between" gap={16} wrap>
           <div>
             <p style={{ margin: 0, color: "var(--accent)", fontWeight: 700 }}>Report Flow</p>
-            <h1 style={{ margin: "8px 0 0", fontSize: "2rem" }}>새 제보 등록</h1>
+            <h1 style={{ margin: "8px 0 0", fontSize: "2rem" }}>지도 제보 등록</h1>
             <p style={{ margin: "10px 0 0", color: "var(--muted)" }}>
-              {userEmail ? `${userEmail} 계정으로 제보 등록` : "로그인한 사용자만 제보할 수 있습니다."}
+              {userEmail ? `${userEmail} 계정으로 제보 등록` : "로그인한 사용자만 제보를 등록할 수 있습니다."}
             </p>
           </div>
           <Flex gap={12} wrap>
@@ -88,7 +106,7 @@ export function ReportForm({ categories, previewPlaces, userEmail }: ReportFormP
           onFinish={submit}
           initialValues={{
             ...defaultValues,
-            category: categories.find((category) => category.id === "report")?.id ?? categories[0]?.id ?? "report",
+            category: defaultCategoryValue,
           }}
           style={{ marginTop: 24 }}
         >
@@ -104,11 +122,13 @@ export function ReportForm({ categories, previewPlaces, userEmail }: ReportFormP
             <Form.Item
               label="카테고리"
               name="category"
-              rules={[{ required: true, message: "카테고리를 선택해주세요." }]}
+              rules={[{ required: true, message: "카테고리를 입력해주세요." }]}
+              extra="기존 카테고리를 선택하거나 새 카테고리명을 직접 입력할 수 있습니다."
             >
-              <Select
+              <AutoComplete
                 size="large"
-                options={categories.map((category) => ({ value: category.id, label: category.label }))}
+                options={categoryOptions}
+                placeholder="예: 제보, 맛집, 주차"
               />
             </Form.Item>
 
@@ -124,19 +144,11 @@ export function ReportForm({ categories, previewPlaces, userEmail }: ReportFormP
               <Input.TextArea autoSize={{ minRows: 4, maxRows: 6 }} />
             </Form.Item>
 
-            <Form.Item
-              label="위도"
-              name="latitude"
-              rules={[{ required: true, message: "위도를 입력해주세요." }]}
-            >
+            <Form.Item label="위도" name="latitude" rules={[{ required: true, message: "위도를 입력해주세요." }]}>
               <InputNumber size="large" style={{ width: "100%" }} step={0.0001} />
             </Form.Item>
 
-            <Form.Item
-              label="경도"
-              name="longitude"
-              rules={[{ required: true, message: "경도를 입력해주세요." }]}
-            >
+            <Form.Item label="경도" name="longitude" rules={[{ required: true, message: "경도를 입력해주세요." }]}>
               <InputNumber size="large" style={{ width: "100%" }} step={0.0001} />
             </Form.Item>
           </div>
@@ -171,10 +183,7 @@ export function ReportForm({ categories, previewPlaces, userEmail }: ReportFormP
               size="large"
               onClick={() => {
                 setFeedback(null);
-                form.setFieldsValue({
-                  ...defaultValues,
-                  category: categories.find((category) => category.id === "report")?.id ?? categories[0]?.id ?? "report",
-                });
+                resetForm();
               }}
               disabled={isPending}
             >

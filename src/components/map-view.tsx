@@ -40,6 +40,35 @@ type MapViewProps = {
   onSelectPlace: (placeId: string) => void;
 };
 
+function createPopupContent(place: Place, categoryLabel: string) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "map-popup-card";
+
+  const header = document.createElement("div");
+  header.className = "map-popup-header";
+
+  const title = document.createElement("strong");
+  title.className = "map-popup-title";
+  title.textContent = place.name;
+
+  const tag = document.createElement("span");
+  tag.className = "map-popup-tag";
+  tag.textContent = categoryLabel;
+
+  const city = document.createElement("p");
+  city.className = "map-popup-city";
+  city.textContent = place.city;
+
+  const address = document.createElement("p");
+  address.className = "map-popup-address";
+  address.textContent = place.address;
+
+  header.append(title, tag);
+  wrapper.append(header, city, address);
+
+  return wrapper;
+}
+
 export function MapView({ categories, places, selectedPlaceId, onSelectPlace }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
@@ -90,20 +119,12 @@ export function MapView({ categories, places, selectedPlaceId, onSelectPlace }: 
       element.style.setProperty("--marker-color", getCategoryColor(place.category));
       element.setAttribute("aria-label", place.name);
       element.addEventListener("click", () => onSelectPlace(place.id));
+      const categoryLabel = getCategoryLabel(categories, place.category);
 
       const popup = new maplibregl.Popup({
         offset: 24,
         className: "map-popup",
-      }).setHTML(`
-        <div class="map-popup-card">
-          <div class="map-popup-header">
-            <strong class="map-popup-title">${place.name}</strong>
-            <span class="map-popup-tag">${getCategoryLabel(categories, place.category)}</span>
-          </div>
-          <p class="map-popup-city">${place.city}</p>
-          <p class="map-popup-address">${place.address}</p>
-        </div>
-      `);
+      }).setDOMContent(createPopupContent(place, categoryLabel));
 
       const marker = new maplibregl.Marker({ element })
         .setLngLat(place.coordinates)

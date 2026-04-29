@@ -1,8 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import {
+  createCategoryAction,
+  createPlaceAction,
+  deletePlaceAction,
+  updatePlaceAction,
+  updatePlaceStatusAction,
+} from "@/app/admin/actions";
+import { logout } from "@/app/login/actions";
+import { CoordinatePicker } from "@/components/coordinate-picker";
+import type { PlaceMutationInput } from "@/lib/place-repository";
+import {
+  getCategoryLabel,
+  placeStatusColors,
+  placeStatusLabels,
+  type Category,
+  type Place,
+} from "@/lib/places";
 import {
   Button,
   Card,
@@ -14,23 +28,9 @@ import {
   Statistic,
   Tag,
 } from "antd";
-import {
-  createCategoryAction,
-  createPlaceAction,
-  deletePlaceAction,
-  updatePlaceAction,
-  updatePlaceStatusAction,
-} from "@/app/admin/actions";
-import { logout } from "@/app/login/actions";
-import { CoordinatePicker } from "@/components/coordinate-picker";
-import {
-  getCategoryLabel,
-  placeStatusColors,
-  placeStatusLabels,
-  type Category,
-  type Place,
-} from "@/lib/places";
-import type { PlaceMutationInput } from "@/lib/place-repository";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, useTransition } from "react";
 
 const panelStyle = {
   background: "var(--surface)",
@@ -57,21 +57,40 @@ type AdminDashboardProps = {
   userEmail?: string;
 };
 
-export function AdminDashboard({ places, categories, previewPlaces, userEmail }: AdminDashboardProps) {
+export function AdminDashboard({
+  places,
+  categories,
+  previewPlaces,
+  userEmail,
+}: AdminDashboardProps) {
   const router = useRouter();
   const [form] = Form.useForm<PlaceMutationInput>();
   const [categoryForm] = Form.useForm<{ label: string }>();
   const [editingPlaceId, setEditingPlaceId] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<{ type: "error" | "success"; text: string } | null>(null);
-  const [categoryFeedback, setCategoryFeedback] = useState<{ type: "error" | "success"; text: string } | null>(null);
+  const [feedback, setFeedback] = useState<{
+    type: "error" | "success";
+    text: string;
+  } | null>(null);
+  const [categoryFeedback, setCategoryFeedback] = useState<{
+    type: "error" | "success";
+    text: string;
+  } | null>(null);
   const [isPending, startTransition] = useTransition();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | Place["status"]>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | Place["status"]>(
+    "all",
+  );
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
-  const pendingCount = places.filter((place) => place.status === "pending").length;
-  const publishedCount = places.filter((place) => place.status === "published").length;
-  const rejectedCount = places.filter((place) => place.status === "rejected").length;
+  const pendingCount = places.filter(
+    (place) => place.status === "pending",
+  ).length;
+  const publishedCount = places.filter(
+    (place) => place.status === "published",
+  ).length;
+  const rejectedCount = places.filter(
+    (place) => place.status === "rejected",
+  ).length;
 
   useEffect(() => {
     form.setFieldsValue({
@@ -85,12 +104,14 @@ export function AdminDashboard({ places, categories, previewPlaces, userEmail }:
 
     return [...places]
       .filter((place) => {
-        const matchesStatus = statusFilter === "all" || place.status === statusFilter;
-        const matchesCategory = categoryFilter === "all" || place.category === categoryFilter;
+        const matchesStatus =
+          statusFilter === "all" || place.status === statusFilter;
+        const matchesCategory =
+          categoryFilter === "all" || place.category === categoryFilter;
         const matchesSearch =
           normalized.length === 0 ||
-          [place.name, place.description, place.address, place.city].some((value) =>
-            value.toLowerCase().includes(normalized),
+          [place.name, place.description, place.address, place.city].some(
+            (value) => value.toLowerCase().includes(normalized),
           );
 
         return matchesStatus && matchesCategory && matchesSearch;
@@ -102,7 +123,10 @@ export function AdminDashboard({ places, categories, previewPlaces, userEmail }:
           published: 2,
         } satisfies Record<Place["status"], number>;
 
-        return weight[left.status] - weight[right.status] || left.name.localeCompare(right.name, "ko");
+        return (
+          weight[left.status] - weight[right.status] ||
+          left.name.localeCompare(right.name, "ko")
+        );
       });
   }, [categoryFilter, places, search, statusFilter]);
 
@@ -196,7 +220,10 @@ export function AdminDashboard({ places, categories, previewPlaces, userEmail }:
         return;
       }
 
-      setFeedback({ type: "success", text: `"${place.name}" 상태를 ${actionLabel}(으)로 변경했습니다.` });
+      setFeedback({
+        type: "success",
+        text: `"${place.name}" 상태를 ${actionLabel}(으)로 변경했습니다.`,
+      });
 
       if (editingPlaceId === place.id) {
         form.setFieldValue("status", status);
@@ -217,21 +244,41 @@ export function AdminDashboard({ places, categories, previewPlaces, userEmail }:
         return;
       }
 
-      setCategoryFeedback({ type: "success", text: "카테고리를 추가했습니다." });
+      setCategoryFeedback({
+        type: "success",
+        text: "카테고리를 추가했습니다.",
+      });
       categoryForm.resetFields();
       router.refresh();
     });
   }
 
   return (
-    <main style={{ minHeight: "100vh", padding: "24px", display: "grid", gap: "20px" }}>
-      <Card style={panelStyle} styles={{ body: { padding: 24 } }} variant="borderless">
+    <main
+      style={{
+        minHeight: "100vh",
+        padding: "24px",
+        display: "grid",
+        gap: "20px",
+      }}
+    >
+      <Card
+        style={panelStyle}
+        styles={{ body: { padding: 24 } }}
+        variant="borderless"
+      >
         <Flex justify="space-between" gap={16} wrap>
           <div>
-            <p style={{ margin: 0, color: "var(--accent)", fontWeight: 700 }}>Admin Starter</p>
-            <h1 style={{ margin: "8px 0 0", fontSize: "2rem" }}>운영/확인 대시보드</h1>
+            <p style={{ margin: 0, color: "var(--accent)", fontWeight: 700 }}>
+              Admin Starter
+            </p>
+            <h1 style={{ margin: "8px 0 0", fontSize: "2rem" }}>
+              운영/확인 대시보드
+            </h1>
             <p style={{ margin: "10px 0 0", color: "var(--muted)" }}>
-              {userEmail ? `${userEmail} 계정으로 로그인됨` : "인증된 사용자 전용 화면"}
+              {userEmail
+                ? `${userEmail} 계정으로 로그인됨`
+                : "인증된 사용자 전용 화면"}
             </p>
           </div>
           <Flex gap={12} wrap>
@@ -247,7 +294,10 @@ export function AdminDashboard({ places, categories, previewPlaces, userEmail }:
           </Flex>
         </Flex>
 
-        <div className="summary-grid summary-grid-admin" style={{ marginTop: "20px" }}>
+        <div
+          className="summary-grid summary-grid-admin"
+          style={{ marginTop: "20px" }}
+        >
           <Card size="small">
             <Statistic title="총 장소" value={places.length} />
           </Card>
@@ -270,24 +320,41 @@ export function AdminDashboard({ places, categories, previewPlaces, userEmail }:
           styles={{ body: { padding: 24 } }}
           variant="borderless"
         >
-          <Form<PlaceMutationInput> form={form} layout="vertical" onFinish={submit}>
+          <Form<PlaceMutationInput>
+            form={form}
+            layout="vertical"
+            onFinish={submit}
+          >
             <div className="admin-form-grid">
-              <Form.Item label="장소명" name="name" rules={[{ required: true, message: "장소명을 입력해주세요." }]}>
+              <Form.Item
+                label="장소명"
+                name="name"
+                rules={[{ required: true, message: "장소명을 입력해주세요." }]}
+              >
                 <Input size="large" />
               </Form.Item>
 
-              <Form.Item label="도시" name="city" rules={[{ required: true, message: "도시를 입력해주세요." }]}>
+              <Form.Item
+                label="도시"
+                name="city"
+                rules={[{ required: true, message: "도시를 입력해주세요." }]}
+              >
                 <Input size="large" />
               </Form.Item>
 
               <Form.Item
                 label="카테고리"
                 name="category"
-                rules={[{ required: true, message: "카테고리를 선택해주세요." }]}
+                rules={[
+                  { required: true, message: "카테고리를 선택해주세요." },
+                ]}
               >
                 <Select
                   size="large"
-                  options={categories.map((category) => ({ value: category.id, label: category.label }))}
+                  options={categories.map((category) => ({
+                    value: category.id,
+                    label: category.label,
+                  }))}
                 />
               </Form.Item>
 
@@ -306,7 +373,11 @@ export function AdminDashboard({ places, categories, previewPlaces, userEmail }:
                 />
               </Form.Item>
 
-              <Form.Item label="주소" name="address" rules={[{ required: true, message: "주소를 입력해주세요." }]}>
+              <Form.Item
+                label="주소"
+                name="address"
+                rules={[{ required: true, message: "주소를 입력해주세요." }]}
+              >
                 <Input size="large" />
               </Form.Item>
 
@@ -323,7 +394,11 @@ export function AdminDashboard({ places, categories, previewPlaces, userEmail }:
                 name="latitude"
                 rules={[{ required: true, message: "위도를 입력해주세요." }]}
               >
-                <InputNumber size="large" style={{ width: "100%" }} step={0.0001} />
+                <InputNumber
+                  size="large"
+                  style={{ width: "100%" }}
+                  step={0.0001}
+                />
               </Form.Item>
 
               <Form.Item
@@ -331,7 +406,11 @@ export function AdminDashboard({ places, categories, previewPlaces, userEmail }:
                 name="longitude"
                 rules={[{ required: true, message: "경도를 입력해주세요." }]}
               >
-                <InputNumber size="large" style={{ width: "100%" }} step={0.0001} />
+                <InputNumber
+                  size="large"
+                  style={{ width: "100%" }}
+                  step={0.0001}
+                />
               </Form.Item>
             </div>
 
@@ -341,8 +420,13 @@ export function AdminDashboard({ places, categories, previewPlaces, userEmail }:
                   categories={categories}
                   places={previewPlaces}
                   value={{
-                    latitude: Number(form.getFieldValue("latitude") ?? defaultValues.latitude),
-                    longitude: Number(form.getFieldValue("longitude") ?? defaultValues.longitude),
+                    latitude: Number(
+                      form.getFieldValue("latitude") ?? defaultValues.latitude,
+                    ),
+                    longitude: Number(
+                      form.getFieldValue("longitude") ??
+                        defaultValues.longitude,
+                    ),
                   }}
                   onChange={({ latitude, longitude }) => {
                     form.setFieldsValue({ latitude, longitude });
@@ -352,13 +436,20 @@ export function AdminDashboard({ places, categories, previewPlaces, userEmail }:
             </Form.Item>
 
             {feedback ? (
-              <div className={`feedback-panel ${feedback.type === "error" ? "is-error" : "is-success"}`}>
+              <div
+                className={`feedback-panel ${feedback.type === "error" ? "is-error" : "is-success"}`}
+              >
                 {feedback.text}
               </div>
             ) : null}
 
             <Flex gap={12} wrap>
-              <Button type="primary" htmlType="submit" size="large" loading={isPending}>
+              <Button
+                type="primary"
+                htmlType="submit"
+                size="large"
+                loading={isPending}
+              >
                 {editingPlaceId ? "수정 저장" : "장소 추가"}
               </Button>
               <Button size="large" onClick={resetForm} disabled={isPending}>
@@ -368,7 +459,12 @@ export function AdminDashboard({ places, categories, previewPlaces, userEmail }:
           </Form>
         </Card>
 
-        <Card title="카테고리 관리" style={panelStyle} styles={{ body: { padding: 24 } }} variant="borderless">
+        <Card
+          title="카테고리 관리"
+          style={panelStyle}
+          styles={{ body: { padding: 24 } }}
+          variant="borderless"
+        >
           <Flex vertical gap={16}>
             <div className="tag-cloud">
               {categories.map((category) => (
@@ -378,22 +474,35 @@ export function AdminDashboard({ places, categories, previewPlaces, userEmail }:
               ))}
             </div>
 
-            <Form<{ label: string }> form={categoryForm} layout="vertical" onFinish={submitCategory}>
+            <Form<{ label: string }>
+              form={categoryForm}
+              layout="vertical"
+              onFinish={submitCategory}
+            >
               <Form.Item
                 label="새 카테고리명"
                 name="label"
-                rules={[{ required: true, message: "카테고리명을 입력해주세요." }]}
+                rules={[
+                  { required: true, message: "카테고리명을 입력해주세요." },
+                ]}
               >
                 <Input size="large" placeholder="예: 반려동물, 문화공간" />
               </Form.Item>
 
               {categoryFeedback ? (
-                <div className={`feedback-panel ${categoryFeedback.type === "error" ? "is-error" : "is-success"}`}>
+                <div
+                  className={`feedback-panel ${categoryFeedback.type === "error" ? "is-error" : "is-success"}`}
+                >
                   {categoryFeedback.text}
                 </div>
               ) : null}
 
-              <Button htmlType="submit" type="primary" size="large" loading={isPending}>
+              <Button
+                htmlType="submit"
+                type="primary"
+                size="large"
+                loading={isPending}
+              >
                 카테고리 추가
               </Button>
             </Form>
@@ -401,7 +510,12 @@ export function AdminDashboard({ places, categories, previewPlaces, userEmail }:
         </Card>
       </section>
 
-      <Card title="검수 목록" style={panelStyle} styles={{ body: { padding: 24 } }} variant="borderless">
+      <Card
+        title="검수 목록"
+        style={panelStyle}
+        styles={{ body: { padding: 24 } }}
+        variant="borderless"
+      >
         <div className="admin-filter-bar">
           <Input
             value={search}
@@ -419,14 +533,19 @@ export function AdminDashboard({ places, categories, previewPlaces, userEmail }:
               { value: "published", label: "공개" },
               { value: "rejected", label: "반려" },
             ]}
-            onChange={(value) => setStatusFilter(value as "all" | Place["status"])}
+            onChange={(value) =>
+              setStatusFilter(value as "all" | Place["status"])
+            }
           />
           <Select
             size="large"
             value={categoryFilter}
             options={[
               { value: "all", label: "전체 카테고리" },
-              ...categories.map((category) => ({ value: category.id, label: category.label })),
+              ...categories.map((category) => ({
+                value: category.id,
+                label: category.label,
+              })),
             ]}
             onChange={(value) => setCategoryFilter(value)}
           />
@@ -435,18 +554,33 @@ export function AdminDashboard({ places, categories, previewPlaces, userEmail }:
         <div className="dashboard-list">
           {filteredPlaces.map((place) => (
             <div className="dashboard-list-item" key={place.id}>
-              <Flex justify="space-between" align="center" gap={16} style={{ width: "100%" }} wrap>
+              <Flex
+                justify="space-between"
+                align="center"
+                gap={16}
+                style={{ width: "100%" }}
+                wrap
+              >
                 <div>
                   <strong>{place.name}</strong>
                   <p style={{ margin: "6px 0 0", color: "var(--muted)" }}>
-                    {getCategoryLabel(categories, place.category)} · {place.city} · {place.address}
+                    {getCategoryLabel(categories, place.category)} ·{" "}
+                    {place.city} · {place.address}
                   </p>
-                  <p style={{ margin: "10px 0 0", color: "var(--muted)", lineHeight: 1.5 }}>
+                  <p
+                    style={{
+                      margin: "10px 0 0",
+                      color: "var(--muted)",
+                      lineHeight: 1.5,
+                    }}
+                  >
                     {place.description}
                   </p>
                 </div>
                 <Flex gap={8} align="center" wrap>
-                  <Tag color={placeStatusColors[place.status]}>{placeStatusLabels[place.status]}</Tag>
+                  <Tag color={placeStatusColors[place.status]}>
+                    {placeStatusLabels[place.status]}
+                  </Tag>
                   {place.status !== "published" ? (
                     <Button
                       size="small"
@@ -467,17 +601,28 @@ export function AdminDashboard({ places, categories, previewPlaces, userEmail }:
                       반려
                     </Button>
                   ) : null}
-                  <Button size="small" onClick={() => fillForm(place)} disabled={isPending}>
+                  <Button
+                    size="small"
+                    onClick={() => fillForm(place)}
+                    disabled={isPending}
+                  >
                     수정
                   </Button>
-                  <Button danger size="small" onClick={() => remove(place)} disabled={isPending}>
+                  <Button
+                    danger
+                    size="small"
+                    onClick={() => remove(place)}
+                    disabled={isPending}
+                  >
                     삭제
                   </Button>
                 </Flex>
               </Flex>
             </div>
           ))}
-          {filteredPlaces.length === 0 ? <div className="dashboard-empty">조건에 맞는 장소가 없습니다.</div> : null}
+          {filteredPlaces.length === 0 ? (
+            <div className="dashboard-empty">조건에 맞는 장소가 없습니다.</div>
+          ) : null}
         </div>
       </Card>
     </main>
