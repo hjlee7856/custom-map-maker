@@ -18,6 +18,7 @@ import {
   type Place,
 } from "@/lib/places";
 import {
+  Alert,
   Button,
   Card,
   Flex,
@@ -27,17 +28,12 @@ import {
   Select,
   Statistic,
   Tag,
+  Typography,
 } from "antd";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
-
-const panelStyle = {
-  background: "var(--surface)",
-  border: "1px solid var(--line)",
-  borderRadius: "24px",
-  backdropFilter: "blur(10px)",
-};
+const { Title, Text, Paragraph } = Typography;
 
 const defaultValues: PlaceMutationInput = {
   name: "",
@@ -260,26 +256,19 @@ export function AdminDashboard({
         padding: "24px",
         display: "grid",
         gap: "20px",
+        background: "#f5f5f5",
       }}
     >
-      <Card
-        style={panelStyle}
-        styles={{ body: { padding: 24 } }}
-        variant="borderless"
-      >
+      <Card styles={{ body: { padding: 24 } }}>
         <Flex justify="space-between" gap={16} wrap>
           <div>
-            <p style={{ margin: 0, color: "var(--accent)", fontWeight: 700 }}>
-              Admin Starter
-            </p>
-            <h1 style={{ margin: "8px 0 0", fontSize: "2rem" }}>
-              운영/확인 대시보드
-            </h1>
-            <p style={{ margin: "10px 0 0", color: "var(--muted)" }}>
+            <Text type="secondary">Admin Starter</Text>
+            <Title level={2} style={{ margin: "8px 0 0" }}>운영/확인 대시보드</Title>
+            <Paragraph type="secondary" style={{ margin: "10px 0 0" }}>
               {userEmail
                 ? `${userEmail} 계정으로 로그인됨`
                 : "인증된 사용자 전용 화면"}
-            </p>
+            </Paragraph>
           </div>
           <Flex gap={12} wrap>
             <Link href="/report">
@@ -316,9 +305,7 @@ export function AdminDashboard({
       <section className="admin-layout-grid">
         <Card
           title={editingPlaceId ? "장소 수정" : "장소 추가"}
-          style={panelStyle}
           styles={{ body: { padding: 24 } }}
-          variant="borderless"
         >
           <Form<PlaceMutationInput>
             form={form}
@@ -436,11 +423,11 @@ export function AdminDashboard({
             </Form.Item>
 
             {feedback ? (
-              <div
-                className={`feedback-panel ${feedback.type === "error" ? "is-error" : "is-success"}`}
-              >
-                {feedback.text}
-              </div>
+              <Alert
+                type={feedback.type === "error" ? "error" : "success"}
+                showIcon
+                message={feedback.text}
+              />
             ) : null}
 
             <Flex gap={12} wrap>
@@ -461,9 +448,7 @@ export function AdminDashboard({
 
         <Card
           title="카테고리 관리"
-          style={panelStyle}
           styles={{ body: { padding: 24 } }}
-          variant="borderless"
         >
           <Flex vertical gap={16}>
             <div className="tag-cloud">
@@ -490,11 +475,11 @@ export function AdminDashboard({
               </Form.Item>
 
               {categoryFeedback ? (
-                <div
-                  className={`feedback-panel ${categoryFeedback.type === "error" ? "is-error" : "is-success"}`}
-                >
-                  {categoryFeedback.text}
-                </div>
+                <Alert
+                  type={categoryFeedback.type === "error" ? "error" : "success"}
+                  showIcon
+                  message={categoryFeedback.text}
+                />
               ) : null}
 
               <Button
@@ -512,9 +497,7 @@ export function AdminDashboard({
 
       <Card
         title="검수 목록"
-        style={panelStyle}
         styles={{ body: { padding: 24 } }}
-        variant="borderless"
       >
         <div className="admin-filter-bar">
           <Input

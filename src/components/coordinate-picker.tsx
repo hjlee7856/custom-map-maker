@@ -124,16 +124,17 @@ export function CoordinatePicker({
 
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = places.map((place) => {
-      const element = document.createElement("span");
-      element.className = "map-marker map-marker-preview";
-      element.style.setProperty("--marker-color", getCategoryColor(place.category));
       const categoryLabel = getCategoryLabel(categories, place.category);
 
       const popup = new maplibregl.Popup({ offset: 18 }).setDOMContent(
         createPopupContent(place, categoryLabel),
       );
 
-      return new maplibregl.Marker({ element })
+      return new maplibregl.Marker({
+        color: getCategoryColor(place.category),
+        className: "map-marker map-marker-preview",
+        scale: 0.7,
+      })
         .setLngLat(place.coordinates)
         .setPopup(popup)
         .addTo(map);
@@ -148,13 +149,11 @@ export function CoordinatePicker({
 
     selectedMarkerRef.current?.remove();
 
-    const element = document.createElement("button");
-    element.type = "button";
-    element.className = "map-marker is-selected";
-    element.style.setProperty("--marker-color", "#17212b");
-    element.setAttribute("aria-label", "선택한 좌표");
-
-    selectedMarkerRef.current = new maplibregl.Marker({ element })
+    selectedMarkerRef.current = new maplibregl.Marker({
+      color: "#17212b",
+      className: "map-marker is-selected",
+      scale: 0.9,
+    })
       .setLngLat([value.longitude, value.latitude])
       .addTo(map);
 

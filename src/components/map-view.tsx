@@ -10,7 +10,6 @@ import maplibregl, {
   LngLatBoundsLike,
   Map as MapLibreMap,
   Marker,
-  type Offset,
   StyleSpecification,
 } from "maplibre-gl";
 import { useEffect, useRef } from "react";
@@ -19,18 +18,6 @@ const koreaBounds: LngLatBoundsLike = [
   [124.5, 33.0],
   [132.2, 38.9],
 ];
-
-const markerRadius = 12;
-const popupOffset: Offset = {
-  top: [0, markerRadius],
-  "top-left": [0, markerRadius],
-  "top-right": [0, markerRadius],
-  bottom: [0, -markerRadius],
-  "bottom-left": [0, -markerRadius],
-  "bottom-right": [0, -markerRadius],
-  left: [markerRadius, 0],
-  right: [-markerRadius, 0],
-};
 
 const baseStyle: StyleSpecification = {
   version: 8,
@@ -139,32 +126,25 @@ export function MapView({
     markersRef.current.clear();
 
     places.forEach((place) => {
-      const element = document.createElement("button");
-      element.type = "button";
-      element.className = "map-marker";
-      element.setAttribute("aria-label", place.name);
-      const dot = document.createElement("span");
-      dot.className = "map-marker-dot";
-      dot.style.setProperty(
-        "--marker-color",
-        getCategoryColor(place.category),
-      );
-      element.append(dot);
       const categoryLabel = getCategoryLabel(categories, place.category);
 
       const popup = new maplibregl.Popup({
         className: "map-popup",
-        closeOnClick: false,
-        offset: popupOffset,
+        closeOnClick: true,
+        closeButton: false,
       }).setDOMContent(createPopupContent(place, categoryLabel));
 
-      const marker = new maplibregl.Marker({ element, anchor: "center" })
-        .setSubpixelPositioning(true)
+      const marker = new maplibregl.Marker({
+        color: getCategoryColor(place.category),
+        className: "map-marker",
+        scale: 0.9,
+      })
         .setLngLat(place.coordinates)
         .setPopup(popup)
         .addTo(map);
 
-      element.addEventListener("click", () => {
+      marker.getElement().setAttribute("aria-label", place.name);
+      marker.on("click", () => {
         onSelectPlace(place.id);
       });
 

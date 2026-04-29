@@ -2,18 +2,11 @@
 
 import { startTransition, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, Flex, Input, Segmented } from "antd";
+import { Alert, Button, Card, Flex, Form, Input, Segmented, Typography } from "antd";
 import { login, signup } from "@/app/login/actions";
 
-const panelStyle = {
-  width: "min(460px, 100%)",
-  background: "var(--surface)",
-  border: "1px solid var(--line)",
-  borderRadius: "24px",
-  backdropFilter: "blur(10px)",
-};
-
 type Mode = "login" | "signup";
+const { Title, Text, Paragraph } = Typography;
 
 export function AuthPanel() {
   const router = useRouter();
@@ -58,9 +51,10 @@ export function AuthPanel() {
         padding: "24px",
         display: "grid",
         placeItems: "center",
+        background: "#f5f5f5",
       }}
     >
-      <Card style={panelStyle} styles={{ body: { padding: 24 } }} variant="borderless">
+      <Card style={{ width: "min(460px, 100%)" }} styles={{ body: { padding: 24 } }}>
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -69,11 +63,11 @@ export function AuthPanel() {
         >
           <Flex vertical gap={16}>
           <div>
-            <p style={{ margin: 0, color: "var(--accent)", fontWeight: 700 }}>Supabase Auth</p>
-            <h1 style={{ margin: "8px 0 0", fontSize: "2rem" }}>관리자 로그인</h1>
-            <p style={{ margin: "10px 0 0", color: "var(--muted)", lineHeight: 1.6 }}>
+            <Text type="secondary">Supabase Auth</Text>
+            <Title level={2} style={{ margin: "8px 0 0" }}>관리자 로그인</Title>
+            <Paragraph type="secondary" style={{ margin: "10px 0 0", lineHeight: 1.6 }}>
               이메일/비밀번호 기반으로 로그인하고 관리자 화면 접근을 보호합니다.
-            </p>
+            </Paragraph>
           </div>
 
           <Segmented
@@ -86,8 +80,7 @@ export function AuthPanel() {
             onChange={(value) => setMode(value as Mode)}
           />
 
-          <label style={{ display: "grid", gap: 8 }}>
-            <span style={{ fontWeight: 700 }}>이메일</span>
+          <Form.Item label="이메일" style={{ marginBottom: 0 }}>
             <Input
               type="email"
               size="large"
@@ -96,10 +89,9 @@ export function AuthPanel() {
               placeholder="admin@example.com"
               autoComplete="email"
             />
-          </label>
+          </Form.Item>
 
-          <label style={{ display: "grid", gap: 8 }}>
-            <span style={{ fontWeight: 700 }}>비밀번호</span>
+          <Form.Item label="비밀번호" style={{ marginBottom: 0 }}>
             <Input.Password
               size="large"
               value={password}
@@ -107,19 +99,14 @@ export function AuthPanel() {
               placeholder="비밀번호 입력"
               autoComplete={mode === "login" ? "current-password" : "new-password"}
             />
-          </label>
+          </Form.Item>
 
           {feedback ? (
-            <div
-              style={{
-                padding: "12px 14px",
-                borderRadius: 16,
-                background: feedback.type === "error" ? "rgba(220, 38, 38, 0.08)" : "rgba(15, 118, 110, 0.08)",
-                color: feedback.type === "error" ? "#991b1b" : "var(--accent-strong)",
-              }}
-            >
-              {feedback.text}
-            </div>
+            <Alert
+              type={feedback.type === "error" ? "error" : "success"}
+              showIcon
+              message={feedback.text}
+            />
           ) : null}
 
           <Button type="primary" size="large" loading={pending} htmlType="submit">

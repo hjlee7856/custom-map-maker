@@ -3,18 +3,12 @@
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AutoComplete, Button, Card, Flex, Form, Input, InputNumber } from "antd";
+import { Alert, AutoComplete, Button, Card, Flex, Form, Input, InputNumber, Typography } from "antd";
 import { createReportAction } from "@/app/report/actions";
 import { CoordinatePicker } from "@/components/coordinate-picker";
 import type { Category, Place } from "@/lib/places";
 import type { ReportMutationInput } from "@/lib/place-repository";
-
-const panelStyle = {
-  background: "var(--surface)",
-  border: "1px solid var(--line)",
-  borderRadius: "24px",
-  backdropFilter: "blur(10px)",
-};
+const { Title, Text, Paragraph } = Typography;
 
 const defaultValues: ReportMutationInput = {
   name: "",
@@ -80,15 +74,15 @@ export function ReportForm({ categories, previewPlaces, userEmail }: ReportFormP
   }
 
   return (
-    <main style={{ minHeight: "100vh", padding: "24px" }}>
-      <Card style={panelStyle} styles={{ body: { padding: 24 } }} variant="borderless">
+    <main style={{ minHeight: "100vh", padding: "24px", background: "#f5f5f5" }}>
+      <Card styles={{ body: { padding: 24 } }}>
         <Flex justify="space-between" gap={16} wrap>
           <div>
-            <p style={{ margin: 0, color: "var(--accent)", fontWeight: 700 }}>Report Flow</p>
-            <h1 style={{ margin: "8px 0 0", fontSize: "2rem" }}>지도 제보 등록</h1>
-            <p style={{ margin: "10px 0 0", color: "var(--muted)" }}>
+            <Text type="secondary">Report Flow</Text>
+            <Title level={2} style={{ margin: "8px 0 0" }}>지도 제보 등록</Title>
+            <Paragraph type="secondary" style={{ margin: "10px 0 0" }}>
               {userEmail ? `${userEmail} 계정으로 제보 등록` : "로그인한 사용자만 제보를 등록할 수 있습니다."}
-            </p>
+            </Paragraph>
           </div>
           <Flex gap={12} wrap>
             <Link href="/">
@@ -170,9 +164,11 @@ export function ReportForm({ categories, previewPlaces, userEmail }: ReportFormP
           </Form.Item>
 
           {feedback ? (
-            <div className={`feedback-panel ${feedback.type === "error" ? "is-error" : "is-success"}`}>
-              {feedback.text}
-            </div>
+            <Alert
+              type={feedback.type === "error" ? "error" : "success"}
+              showIcon
+              message={feedback.text}
+            />
           ) : null}
 
           <Flex gap={12} wrap style={{ marginTop: 20 }}>

@@ -20,11 +20,7 @@ export default function RootLayout({
           <ConfigProvider
             theme={{
               token: {
-                colorPrimary: "#0f766e",
-                colorBgBase: "#f6f2e8",
-                colorTextBase: "#17212b",
-                borderRadius: 18,
-                fontFamily: '"Segoe UI", sans-serif',
+                borderRadius: 12,
               },
             }}
           >

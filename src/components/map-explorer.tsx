@@ -1,8 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button, Card, Flex, Input, Segmented, Statistic, Tag } from "antd";
+import { logout } from "@/app/login/actions";
 import { MapView } from "@/components/map-view";
 import {
   getCategoryLabel,
@@ -11,26 +9,23 @@ import {
   type Category,
   type Place,
 } from "@/lib/places";
+import { Alert, Button, Card, Flex, Input, Segmented, Tag, Typography } from "antd";
+
+import { useRouter } from "next/navigation";
+import { useMemo, useState, useTransition } from "react";
 
 const pageStyle = {
   height: "100vh",
-  padding: "24px",
+  padding: "16px",
   overflow: "hidden",
+  background: "#f5f5f5",
 };
 
 const shellStyle = {
   display: "grid",
   gridTemplateColumns: "360px 1fr",
-  gap: "20px",
+  gap: "16px",
   height: "100%",
-  minHeight: 0,
-};
-
-const panelStyle = {
-  background: "var(--surface)",
-  border: "1px solid var(--line)",
-  borderRadius: "24px",
-  backdropFilter: "blur(10px)",
   minHeight: 0,
 };
 
@@ -47,28 +42,49 @@ const sidebarBodyStyle = {
 };
 
 const placesListStyle = {
-  marginTop: "20px",
+  marginTop: "16px",
+  padding: "8px",
   flex: 1,
   minHeight: 0,
   overflowY: "auto" as const,
   paddingRight: "4px",
 };
 
+const headerStyle = {
+  width: "100%",
+  alignItems: "center",
+};
+
+const headerActionsStyle = {
+  marginLeft: "auto",
+  flexWrap: "wrap" as const,
+  justifyContent: "flex-end",
+};
+
+const { Title, Text, Paragraph } = Typography;
+
 type MapExplorerProps = {
   categories: Category[];
   places: Place[];
+  userEmail?: string;
 };
 
-export function MapExplorer({ categories, places }: MapExplorerProps) {
+export function MapExplorer({ categories, places, userEmail }: MapExplorerProps) {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [search, setSearch] = useState("");
-  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(places[0]?.id ?? null);
+  const [isPending, startTransition] = useTransition();
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(
+    places[0]?.id ?? null,
+  );
 
   const categoryOptions = useMemo(
     () => [
       { label: "전체", value: "all" },
-      ...categories.map((category) => ({ label: category.label, value: category.id })),
+      ...categories.map((category) => ({
+        label: category.label,
+        value: category.id,
+      })),
     ],
     [categories],
   );
@@ -77,11 +93,12 @@ export function MapExplorer({ categories, places }: MapExplorerProps) {
     const normalized = search.trim().toLowerCase();
 
     return places.filter((place) => {
-      const matchesCategory = selectedCategory === "all" || place.category === selectedCategory;
+      const matchesCategory =
+        selectedCategory === "all" || place.category === selectedCategory;
       const matchesSearch =
         normalized.length === 0 ||
-        [place.name, place.description, place.address, place.city].some((value) =>
-          value.toLowerCase().includes(normalized),
+        [place.name, place.description, place.address, place.city].some(
+          (value) => value.toLowerCase().includes(normalized),
         );
 
       return matchesCategory && matchesSearch;
@@ -96,24 +113,67 @@ export function MapExplorer({ categories, places }: MapExplorerProps) {
     return filteredPlaces[0]?.id ?? null;
   }, [filteredPlaces, selectedPlaceId]);
 
+  function signOut() {
+    startTransition(async () => {
+      await logout();
+      router.push("/");
+      router.refresh();
+    });
+  }
+
   return (
     <main style={pageStyle}>
       <div className="app-shell" style={shellStyle}>
-        <Card style={{ ...panelStyle, overflow: "hidden" }} styles={{ body: sidebarBodyStyle }} variant="borderless">
-          <Flex vertical gap={12}>
-            <span style={{ color: "var(--accent)", fontWeight: 700 }}>Korea Map MVP</span>
-            <h1 style={{ margin: 0, fontSize: "2.2rem", lineHeight: 1.1 }}>
-              지역 기반 제보/장소 관리 CMS
-            </h1>
-            <p style={{ margin: 0, color: "var(--muted)", lineHeight: 1.6 }}>
-              서울 중심 기본값과 검색, 카테고리 필터, 리스트와 지도 연동을 우선 반영했습니다.
-            </p>
+        <Card
+          style={{ overflow: "hidden", minHeight: 0 }}
+          styles={{ body: sidebarBodyStyle }}
+        >
+          <Flex gap={12} style={headerStyle}>
+            <Title style={{ margin: 0, fontSize: "2.2rem", lineHeight: 1.1 }}>
+              OO맵
+            </Title>
+            <Flex gap={8} style={headerActionsStyle}>
+              {userEmail ? (
+                <>
+                  <Button
+                    size="small"
+                    type="primary"
+                    onClick={() => router.push("/report")}
+                  >
+                    제보하기
+                  </Button>
+                  <Button
+                    size="small"
+                    color="default"
+                    variant="outlined"
+                    onClick={() => router.push("/admin")}
+                  >
+                    관리자화면보기
+                  </Button>
+                  <Button
+                    size="small"
+                    color="default"
+                    variant="filled"
+                    onClick={signOut}
+                    loading={isPending}
+                  >
+                    로그아웃
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  size="small"
+                  type="primary"
+                  onClick={() => router.push("/login")}
+                >
+                  로그인
+                </Button>
+              )}
+            </Flex>
           </Flex>
 
           <Flex vertical gap={10} style={{ marginTop: "20px" }}>
-            <label htmlFor="place-search" style={{ fontWeight: 700 }}>
-              검색
-            </label>
+            <Text strong>검색</Text>
             <Input
               id="place-search"
               value={search}
@@ -133,63 +193,56 @@ export function MapExplorer({ categories, places }: MapExplorerProps) {
             />
           </div>
 
-          <div className="summary-grid" style={{ marginTop: "20px" }}>
-            <Card size="small">
-              <Statistic title="전체" value={places.length} />
-            </Card>
-            <Card size="small">
-              <Statistic title="현재 결과" value={filteredPlaces.length} />
-            </Card>
-            <Card size="small">
-              <Statistic title="카테고리" value={new Set(filteredPlaces.map((place) => place.category)).size} />
-            </Card>
-          </div>
-
           <div className="places-list" style={placesListStyle}>
             {filteredPlaces.length === 0 ? (
-              <Card size="small">검색어를 줄이거나 카테고리를 전체로 바꿔보세요.</Card>
+              <Alert
+                type="info"
+                showIcon
+                message="검색어를 줄이거나 카테고리를 전체로 바꿔보세요."
+              />
             ) : null}
             {filteredPlaces.map((place) => (
               <Card
                 key={place.id}
-                className={effectiveSelectedPlaceId === place.id ? "place-card is-selected" : "place-card"}
+                className={
+                  effectiveSelectedPlaceId === place.id
+                    ? "place-card is-selected"
+                    : "place-card"
+                }
                 hoverable
                 size="small"
                 style={placeCardStyle}
                 onClick={() => setSelectedPlaceId(place.id)}
               >
                 <Flex justify="space-between" align="center" gap={12}>
-                  <strong>{place.name}</strong>
-                  <Tag color={placeStatusColors[place.status]}>{placeStatusLabels[place.status]}</Tag>
+                  <Text strong>{place.name}</Text>
+                  <Tag color={placeStatusColors[place.status]}>
+                    {placeStatusLabels[place.status]}
+                  </Tag>
                 </Flex>
-                <p style={{ margin: "8px 0 0", color: "var(--muted)", lineHeight: 1.5 }}>
+                <Paragraph
+                  type="secondary"
+                  style={{ margin: "8px 0 0", lineHeight: 1.5 }}
+                >
                   {place.description}
-                </p>
-                <p style={{ margin: "12px 0 0", fontSize: "0.92rem" }}>
-                  {getCategoryLabel(categories, place.category)} · {place.city} · {place.address}
-                </p>
+                </Paragraph>
+                <Text type="secondary" style={{ fontSize: "0.92rem" }}>
+                  {getCategoryLabel(categories, place.category)} · {place.city}{" "}
+                  · {place.address}
+                </Text>
               </Card>
             ))}
           </div>
 
-          <Flex gap={12} style={{ marginTop: "20px" }} vertical>
-            <Button block type="primary" size="large" onClick={() => router.push("/report")}>
-              제보하기
-            </Button>
-            <Button block size="large" onClick={() => router.push("/admin")}>
-              관리자 화면 보기
-            </Button>
-          </Flex>
         </Card>
 
         <Card
           style={{
-            ...panelStyle,
             overflow: "hidden",
             height: "100%",
+            minHeight: 0,
           }}
           styles={{ body: { padding: 0, height: "100%" } }}
-          variant="borderless"
         >
           <MapView
             categories={categories}
