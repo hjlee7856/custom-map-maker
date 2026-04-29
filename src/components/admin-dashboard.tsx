@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  createCategoryAction,
   createPlaceAction,
   deletePlaceAction,
   updatePlaceAction,
@@ -61,13 +60,8 @@ export function AdminDashboard({
 }: AdminDashboardProps) {
   const router = useRouter();
   const [form] = Form.useForm<PlaceMutationInput>();
-  const [categoryForm] = Form.useForm<{ label: string }>();
   const [editingPlaceId, setEditingPlaceId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<{
-    type: "error" | "success";
-    text: string;
-  } | null>(null);
-  const [categoryFeedback, setCategoryFeedback] = useState<{
     type: "error" | "success";
     text: string;
   } | null>(null);
@@ -229,26 +223,6 @@ export function AdminDashboard({
     });
   }
 
-  function submitCategory(values: { label: string }) {
-    setCategoryFeedback(null);
-
-    startTransition(async () => {
-      const result = await createCategoryAction(values.label);
-
-      if (result.error) {
-        setCategoryFeedback({ type: "error", text: result.error });
-        return;
-      }
-
-      setCategoryFeedback({
-        type: "success",
-        text: "카테고리를 추가했습니다.",
-      });
-      categoryForm.resetFields();
-      router.refresh();
-    });
-  }
-
   return (
     <main
       style={{
@@ -302,7 +276,7 @@ export function AdminDashboard({
         </div>
       </Card>
 
-      <section className="admin-layout-grid">
+      <section style={{ display: "grid", gap: "20px" }}>
         <Card
           title={editingPlaceId ? "장소 수정" : "장소 추가"}
           styles={{ body: { padding: 24 } }}
@@ -444,54 +418,6 @@ export function AdminDashboard({
               </Button>
             </Flex>
           </Form>
-        </Card>
-
-        <Card
-          title="카테고리 관리"
-          styles={{ body: { padding: 24 } }}
-        >
-          <Flex vertical gap={16}>
-            <div className="tag-cloud">
-              {categories.map((category) => (
-                <Tag key={category.id} color="cyan">
-                  {category.label}
-                </Tag>
-              ))}
-            </div>
-
-            <Form<{ label: string }>
-              form={categoryForm}
-              layout="vertical"
-              onFinish={submitCategory}
-            >
-              <Form.Item
-                label="새 카테고리명"
-                name="label"
-                rules={[
-                  { required: true, message: "카테고리명을 입력해주세요." },
-                ]}
-              >
-                <Input size="large" placeholder="예: 반려동물, 문화공간" />
-              </Form.Item>
-
-              {categoryFeedback ? (
-                <Alert
-                  type={categoryFeedback.type === "error" ? "error" : "success"}
-                  showIcon
-                  message={categoryFeedback.text}
-                />
-              ) : null}
-
-              <Button
-                htmlType="submit"
-                type="primary"
-                size="large"
-                loading={isPending}
-              >
-                카테고리 추가
-              </Button>
-            </Form>
-          </Flex>
         </Card>
       </section>
 

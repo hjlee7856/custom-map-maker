@@ -67,9 +67,15 @@ type MapExplorerProps = {
   categories: Category[];
   places: Place[];
   userEmail?: string;
+  canViewAdmin: boolean;
 };
 
-export function MapExplorer({ categories, places, userEmail }: MapExplorerProps) {
+export function MapExplorer({
+  categories,
+  places,
+  userEmail,
+  canViewAdmin,
+}: MapExplorerProps) {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [search, setSearch] = useState("");
@@ -142,14 +148,16 @@ export function MapExplorer({ categories, places, userEmail }: MapExplorerProps)
                   >
                     제보하기
                   </Button>
-                  <Button
-                    size="small"
-                    color="default"
-                    variant="outlined"
-                    onClick={() => router.push("/admin")}
-                  >
-                    관리자화면보기
-                  </Button>
+                  {canViewAdmin ? (
+                    <Button
+                      size="small"
+                      color="default"
+                      variant="outlined"
+                      onClick={() => router.push("/admin")}
+                    >
+                      관리자화면보기
+                    </Button>
+                  ) : null}
                   <Button
                     size="small"
                     color="default"

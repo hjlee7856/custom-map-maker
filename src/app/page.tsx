@@ -1,5 +1,5 @@
 import { MapExplorer } from "@/components/map-explorer";
-import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUser, isAllowedAdminEmail } from "@/lib/auth";
 import { getCategories, getPublicPlaces } from "@/lib/place-repository";
 
 export default async function Home() {
@@ -9,5 +9,12 @@ export default async function Home() {
     getCurrentUser(),
   ]);
 
-  return <MapExplorer places={places} categories={categories} userEmail={user?.email} />;
+  return (
+    <MapExplorer
+      places={places}
+      categories={categories}
+      userEmail={user?.email}
+      canViewAdmin={isAllowedAdminEmail(user?.email)}
+    />
+  );
 }

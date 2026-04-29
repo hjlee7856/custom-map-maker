@@ -2,7 +2,7 @@ import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-function isAllowedAdminEmail(email: string | undefined) {
+export function isAllowedAdminEmail(email: string | undefined) {
   const configured = process.env.ADMIN_EMAILS;
 
   if (!configured) {
